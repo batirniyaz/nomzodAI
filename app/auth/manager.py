@@ -4,8 +4,9 @@ from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin, schemas, models, exceptions
 
 from app.auth.database import User, get_user_db
+from app.config import SECRET_KEY
 
-SECRET = "SECRET"
+SECRET = SECRET_KEY
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
@@ -38,6 +39,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
         if user_create.email == "admin@gmail.com":
             user_dict["is_superuser"] = user_create.is_superuser
+            user_dict["is_verified"] = user_create.is_verified
 
         created_user = await self.user_db.create(user_dict)
 
