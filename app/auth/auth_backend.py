@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, UploadFile, File, Response
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import BearerTransport, AuthenticationBackend
 from fastapi_users.authentication import JWTStrategy
@@ -11,8 +12,9 @@ from fastapi.responses import JSONResponse
 
 from app.auth.database import User, get_async_session
 from app.auth.manager import get_user_manager
-from app.auth.schema import UserRead, UserCreate, UserAdminUpdate
+from app.auth.schema import UserRead, UserCreate, UserUpdate
 from app.config import SECRET_KEY
+from app.utils.file_util import save_upload_file
 
 SECRET = SECRET_KEY
 
@@ -30,7 +32,6 @@ auth_backend = AuthenticationBackend(
     transport=bearer_transport,
     get_strategy=get_jwt_strategy,
 )
-
 
 fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
@@ -69,9 +70,9 @@ async def get_all_users(
 
 @router_def.get("/user/{user_id}", response_model=UserRead)
 async def get_user(
-    user_id: int = Path(..., description="The ID of the user to get"),
-    db: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+        user_id: int = Path(..., description="The ID of the user to get"),
+        db: AsyncSession = Depends(get_async_session),
+        current_user: User = Depends(current_active_user)
 ):
     if not current_user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
@@ -85,12 +86,12 @@ async def get_user(
 
 @router_def.put("/update/{user_id}", response_model=UserRead)
 async def update_user(
-    user_update: UserAdminUpdate,
-    user_id: int = Path(..., description="The ID of the user to update"),
-    db: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+        user_update: UserUpdate,
+        user_id: int = Path(..., description="The ID of the user to update"),
+        db: AsyncSession = Depends(get_async_session),
+        current_user: User = Depends(current_active_user)
 ):
-    if not current_user.is_superuser:
+    if not current_user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
     res = await db.execute(select(User).filter_by(id=user_id))
@@ -135,5 +136,3 @@ async def authenticated_route(user: User = Depends(current_active_user)):
 
 
 router.include_router(router_def, prefix="/auth", tags=["auth"])
-
-
