@@ -11,7 +11,7 @@ class UserRead(schemas.BaseUser[int]):
     id: models.ID
     fullName: str
     email: EmailStr
-    imageUrl: Optional[str] = None
+    imageUrl: Optional["UserImageResponse"] = Field(None, description="The image of the user")
     role: str
     is_active: bool = True
     is_superuser: bool = False
@@ -39,15 +39,6 @@ class UserUpdate(schemas.BaseUserUpdate):
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_verified: Optional[bool] = None
-
-
-class UserImage(BaseModel):
-    id: int
-    user_id: int
-
-
-class UserImageCreate(BaseModel):
-    user_id: int
 
 
 class UserImageResponse(BaseModel):
