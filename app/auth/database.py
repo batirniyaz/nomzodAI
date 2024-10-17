@@ -28,7 +28,13 @@ class UserImage(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
     imageUrl: Mapped[str] = mapped_column(String, nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="image")
+    user: Mapped["User"] = relationship("User", back_populates="imageUrl", lazy="selectin")
+
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True),
+                                                          default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True),
+                                                          default=lambda: datetime.datetime.now(datetime.timezone.utc),
+                                                          onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -41,8 +47,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    imageUrl: Mapped[str] = mapped_column(String, nullable=True)
-    image: Mapped["UserImage"] = relationship("UserImage", uselist=False, back_populates="user")
+    imageUrl: Mapped["UserImage"] = relationship("UserImage", uselist=False, back_populates="user", lazy="selectin")
 
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True),
                                                           default=lambda: datetime.datetime.now(datetime.timezone.utc))
