@@ -10,9 +10,9 @@ from sqlalchemy.future import select
 from starlette import status
 from fastapi.responses import JSONResponse
 
-from app.auth.database import User, get_async_session
+from app.auth.database import User, get_async_session, UserImage
 from app.auth.manager import get_user_manager
-from app.auth.schema import UserRead, UserCreate, UserUpdate
+from app.auth.schema import UserRead, UserCreate, UserUpdate, UserImageResponse
 from app.config import SECRET_KEY
 from app.utils.file_util import save_upload_file
 
@@ -136,3 +136,23 @@ async def authenticated_route(user: User = Depends(current_active_user)):
 
 
 router.include_router(router_def, prefix="/auth", tags=["auth"])
+
+image_router = APIRouter()
+
+@image_router.post("/upload")
+async def upload_image(
+        file: UploadFile = File(...),
+        user: User = Depends(current_active_user),
+        db: AsyncSession = Depends(get_async_session)
+):
+    if not user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    image_url, file_path = save_upload_file(file)
+
+    db_image = UserImage(user_id=user.id, imageUrl=f"{image_url}{file_path}")
+    db.add(db_image)
+    await db.commit()
+    await db.refresh(db_image)
+
+    return db_image
