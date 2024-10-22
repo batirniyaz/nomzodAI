@@ -15,7 +15,7 @@ from app.question.schema import QuestionCreate, QuestionResponse, QuestionUpdate
 router = APIRouter()
 
 
-@router.post("/", response_model=QuestionResponse)
+@router.post("/")
 async def create_question_endpoint(
         question: QuestionCreate = Query(..., description="The question details"),
         db: AsyncSession = Depends(get_async_session),
@@ -27,7 +27,7 @@ async def create_question_endpoint(
     return await create_question(db, question)
 
 
-@router.get("/", response_model=List[QuestionResponse])
+@router.get("/")
 async def get_questions_endpoint(
         db: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_active_user)
@@ -38,7 +38,7 @@ async def get_questions_endpoint(
     return await get_questions(db)
 
 
-@router.get("/{question_id}", response_model=QuestionResponse)
+@router.get("/{question_id}")
 async def get_question_by_id_endpoint(
         question_id: int,
         db: AsyncSession = Depends(get_async_session),
@@ -50,7 +50,7 @@ async def get_question_by_id_endpoint(
     return await get_question_by_id(db, question_id)
 
 
-@router.get("/type/{type_id}", response_model=List[QuestionResponse])
+@router.get("/types/{type_id}")
 async def get_questions_by_type_endpoint(
         type_id: int,
         db: AsyncSession = Depends(get_async_session),
@@ -62,7 +62,7 @@ async def get_questions_by_type_endpoint(
     return await get_questions_by_type(db, type_id)
 
 
-@router.put("/{question_id}", response_model=QuestionResponse)
+@router.put("/{question_id}")
 async def update_question_endpoint(
         question_id: int,
         question: QuestionUpdate = Query(..., description="The question details"),
@@ -102,18 +102,21 @@ async def create_question_type_endpoint(
     return await create_question_type(db, question_type)
 
 
-@router_type.get("/", response_model=List[QuestionTypeResponse])
+@router_type.get("/")
 async def get_question_types_endpoint(
         db: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_active_user)
 ):
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    try:
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    return await get_question_types(db)
+        return await get_question_types(db)
+    except Exception as e:
+        raise e
 
 
-@router_type.get("/{type_id}", response_model=QuestionTypeResponse)
+@router_type.get("/{type_id}")
 async def get_question_type_by_id_endpoint(
         type_id: int,
         db: AsyncSession = Depends(get_async_session),
@@ -125,7 +128,7 @@ async def get_question_type_by_id_endpoint(
     return await get_question_type_by_id(db, type_id)
 
 
-@router_type.put("/{type_id}", response_model=QuestionTypeResponse)
+@router_type.put("/{type_id}")
 async def update_question_type_endpoint(
         type_id: int,
         question_type: QuestionTypeCreate = Query(..., description="The question type details"),
