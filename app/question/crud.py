@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
 
 from app.question.model import Question, QuestionType
 from app.question.schema import QuestionCreate, QuestionUpdate, QuestionTypeCreate
@@ -8,7 +9,12 @@ from app.question.schema import QuestionCreate, QuestionUpdate, QuestionTypeCrea
 
 async def create_question(db: AsyncSession, question: QuestionCreate):
     try:
+        question_type = get_question_type_by_id(db, question.type_id)
+        if not question_type:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question type not found")
+
         question = Question(**question.model_dump())
+
         db.add(question)
         await db.commit()
         return question
@@ -65,6 +71,10 @@ async def update_question(db: AsyncSession, question_id: int, question: Question
         if not db_question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
 
+        question_type = get_question_type_by_id(db, question.type_id)
+        if not question_type:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question type not found")
+
         for key, value in question.model_dump(exclude_unset=True).items():
             setattr(db_question, key, value)
 
@@ -88,7 +98,7 @@ async def delete_question(db: AsyncSession, question_id: int):
 
         await db.delete(db_question)
         await db.commit()
-        return db_question
+        return {"status": "success", "msg": "Question deleted successfully"}
     except Exception as e:
         await db.rollback()
         raise e
@@ -100,6 +110,10 @@ async def create_question_type(db: AsyncSession, question_type: QuestionTypeCrea
         db.add(question_type)
         await db.commit()
         return question_type
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Question type already exists (must be unique)")
 
     except Exception as e:
         await db.rollback()
@@ -163,7 +177,7 @@ async def delete_question_type(db: AsyncSession, type_id: int):
 
         await db.delete(db_question_type)
         await db.commit()
-        return db_question_type
+        return {"status": "success", "msg": "Question type deleted successfully"}
     except Exception as e:
         await db.rollback()
         raise e
