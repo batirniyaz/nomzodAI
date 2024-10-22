@@ -22,8 +22,7 @@ class QuestionUpdate(QuestionBase):
 
 class QuestionResponse(QuestionBase):
     id: int = Field(..., description="The ID of the question")
-    type_id: int = Field(..., description="The ID of the question type")
-    type: "QuestionTypeResponse" = Field(..., description="The type of the question")
+    type: "QuestionTypeResponse" = Field(None, description="The type of the question")
 
     created_at: datetime.datetime = Field(..., description="The time the question was created")
     updated_at: datetime.datetime = Field(..., description="The time the question was updated")
